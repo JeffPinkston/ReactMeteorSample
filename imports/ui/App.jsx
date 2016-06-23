@@ -4,9 +4,34 @@ import { Meteor } from 'meteor/meteor';
 import { createContainer } from 'meteor/react-meteor-data';
 
 import { Tasks } from '../api/tasks.js';
+import { Bands } from '../api/bands.js';
+import { Albums } from '../api/albums.js';
+
+import darkBaseTheme from 'material-ui/styles/baseThemes/darkBaseTheme';
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
+import getMuiTheme from 'material-ui/styles/getMuiTheme';
+
+import Drawer from 'material-ui/Drawer';
+import MenuItem from 'material-ui/MenuItem';
+import RaisedButton from 'material-ui/RaisedButton';
+import AppBar from 'material-ui/AppBar';
+import IconButton from 'material-ui/IconButton';
+import NavigationClose from 'material-ui/svg-icons/navigation/close';
+import NavigationMenu from 'material-ui/svg-icons/navigation/menu';
+import Paper from 'material-ui/Paper';
+import TextField from 'material-ui/TextField';
+import {Table, TableBody, TableHeader, TableHeaderColumn, TableRow, TableRowColumn} from 'material-ui/Table';
 
 import Task from './Task.jsx';
+import Band from './Band.jsx';
+import Album from './Album.jsx';
+import AppDrawer from './AppDrawer.jsx';
 import AccountsUIWrapper from './AccountsUIWrapper.jsx';
+
+
+const paperStyle = {
+  textAlign: 'center'
+}
 
 //App component - represents the whole App
 class App extends Component {
@@ -14,18 +39,32 @@ class App extends Component {
     super(props);
 
     this.state = {
-      hideCompleted: false
+      open: false,
+      hideCompleted: false,
+      currentState: 'albums',
+      albumName: ''
     }
   }
 
-  handleSubmit(event) {
+  handleToggle() {
+    this.setState({open: !this.state.open});
+  }
+
+  handleClose(e) {
+    this.setState({
+      currentState:  e.target.innerText.toLowerCase(),
+      open: false
+    });
+  }
+
+  handleBandSubmit(event) {
     event.preventDefault();
 
     //find the text field via the React Reference
     const text = ReactDOM.findDOMNode(this.refs.textInput).value.trim();
 
-    Tasks.insert({
-      text,
+    Bands.insert({
+      name: text,
       createdAt: new Date(),
       owner: Meteor.userId(),
       username: Meteor.user().username
@@ -35,10 +74,45 @@ class App extends Component {
     ReactDOM.findDOMNode(this.refs.textInput).value = '';
   }
 
+  handleAlbumSubmit(event) {
+    event.preventDefault();
+
+    //find the text field via the React Reference
+
+    Albums.insert({
+      artist: 'Pearl Jam',
+      name: this.state.albumName,
+      createdAt: new Date()
+    });
+
+    //clear form
+    this.state.albumName = '';
+  }
+
   toggleHideCompleted() {
     this.setState({
       hideCompleted: !this.state.hideCompleted
-    })
+    });
+  }
+
+  toggleDrawer(){
+    this.setState({
+      open: !this.state.open
+    });
+  }
+
+  renderBands() {
+    let bands = this.props.bands;
+    return bands.map((band) => (
+      <Band key={band.id} band={band} />
+    ));
+  }
+
+  renderAlbums() {
+    let albums = this.props.albums;
+    return albums.map((album) => (
+      <Album key={album.id} album={album} />
+    ));
   }
 
   renderTasks() {
@@ -51,39 +125,51 @@ class App extends Component {
     ));
   }
 
+  handleAlbumChange(event) {
+    this.setState({
+      albumName: event.target.value
+    });
+  }
+
   render() {
     return (
-      <div className="container">
-        <header>
-          <h1>Todo List ({this.props.incompleteCount})</h1>
+      <MuiThemeProvider>
+        <div className="container">
+          <AppBar
+            iconElementLeft={<IconButton onClick={this.handleToggle.bind(this)}><NavigationMenu /></IconButton>}/>
 
-          <label className="hide-completed">
-            <input
-              type="checkbox"
-              readOnly
-              checked={this.state.hideCompleted}
-              onClick={this.toggleHideCompleted.bind(this)}
-              />
-            Hide Completed Tasks
-          </label>
+          <div id="albums">
+              <Paper style={paperStyle} zDepth={1}>
+                <form className="new-task" onSubmit={this.handleAlbumSubmit.bind(this)} >
+                  <TextField
+                    id="album-name"
+                    ref="textInput"
+                    hintText="Album Name"
+                    value={this.state.albumName}
+                    onChange={this.handleAlbumChange.bind(this)}
+                    />
+                </form>
+                <ul>
+                  {this.renderAlbums()}
+                </ul>
+              </Paper>
+            </div> : ''
 
-          <AccountsUIWrapper />
-          { this.props.currentUser ?
-          <form className="new-task" onSubmit={this.handleSubmit.bind(this)} >
-            <input
-              type="text"
-              ref="textInput"
-              placeholder="Type to add new tasks"
-              />
-          </form> : ''
-          }
 
-        </header>
-
-        <ul>
-          {this.renderTasks()}
-        </ul>
+        <Drawer
+          docked={false}
+          width={200}
+          open={this.state.open}
+          onRequestChange={this.toggleDrawer.bind(this)}
+        >
+        <AppBar title="Menu"
+          iconElementLeft={<IconButton onClick={this.handleClose.bind(this)}><NavigationClose /></IconButton>}
+          />
+          <MenuItem refs='bandsMenuItem' onClick={this.handleClose.bind(this)}>Bands</MenuItem>
+          <MenuItem refs='albumsMenuItem' onClick={this.handleClose.bind(this)}>Albums</MenuItem>
+        </Drawer>
       </div>
+      </MuiThemeProvider>
     );
   }
 }
@@ -96,8 +182,41 @@ App.propTypes = {
 
 export default createContainer(() => {
   return {
+    bands: Bands.find({}).fetch(),
+    albums: Albums.find({}).fetch(),
     tasks: Tasks.find({}, {sort: { createdAt: -1 } }).fetch(),
     incompleteCount: Tasks.find({ checked: { $ne: true } }).count(),
     currentUser: Meteor.user()
   };
 }, App);
+
+/*{ this.state.currentState === 'todos' ?
+<header>
+
+  <h1>Todo List ({this.props.incompleteCount})</h1>
+
+  <label className="hide-completed">
+    <input
+      type="checkbox"
+      readOnly
+      checked={this.state.hideCompleted}
+      onClick={this.toggleHideCompleted.bind(this)}
+      />
+    Hide Completed Tasks
+  </label>
+  <RaisedButton label="Open Drawer" onClick={this.handleToggle.bind(this)}/>
+  <AccountsUIWrapper />
+  <form className="new-task" onSubmit={this.handleSubmit.bind(this)} >
+    <input
+      type="text"
+      ref="textInput"
+      placeholder="Type to add new tasks"
+      />
+  </form>
+
+</header>
+
+<ul>
+  {this.renderTasks()}
+</ul>
+}*/
