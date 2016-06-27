@@ -2,6 +2,8 @@ import React, { Component, PropTypes } from 'react';
 
 import { Albums } from '../api/albums.js';
 
+import MenuItem from 'material-ui/MenuItem';
+
 //Task component - representsa single todo item
 export default class Album extends Component {
 
@@ -12,15 +14,7 @@ export default class Album extends Component {
   render() {
 
     return (
-      <li>
-        <button className="delete" onClick={this.deleteThisAlbum.bind(this)}>
-          &times;
-        </button>
-
-        <span className="text">
-          <strong>{this.props.album.name}</strong>
-        </span>
-      </li>
+      <MenuItem value={this.props.album._id} primaryText={this.props.album.name}/>
     );
   }
 }

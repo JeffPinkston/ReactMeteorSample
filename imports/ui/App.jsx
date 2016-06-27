@@ -25,9 +25,9 @@ import {Table, TableBody, TableHeader, TableHeaderColumn, TableRow, TableRowColu
 import Task from './Task.jsx';
 import Band from './Band.jsx';
 import Album from './Album.jsx';
+import SelectDropDown from './SelectDropDown.jsx';
 import AppDrawer from './AppDrawer.jsx';
 import AccountsUIWrapper from './AccountsUIWrapper.jsx';
-
 
 const paperStyle = {
   textAlign: 'center'
@@ -78,15 +78,18 @@ class App extends Component {
     event.preventDefault();
 
     //find the text field via the React Reference
+    const text = this.refs.textInput.props.value.trim();
 
     Albums.insert({
       artist: 'Pearl Jam',
-      name: this.state.albumName,
+      name: text,
       createdAt: new Date()
     });
 
     //clear form
+    this.refs.textInput.props.value = '';
     this.state.albumName = '';
+    this.renderAlbumSelect()
   }
 
   toggleHideCompleted() {
@@ -111,8 +114,14 @@ class App extends Component {
   renderAlbums() {
     let albums = this.props.albums;
     return albums.map((album) => (
-      <Album key={album.id} album={album} />
+      <Album key={album._id} album={album}/>
     ));
+  }
+
+  renderAlbumSelect() {
+    return (
+      <SelectDropDown value={this.props.selectedAlbum} ddData={this.props.albums} />
+    );
   }
 
   renderTasks() {
@@ -125,10 +134,16 @@ class App extends Component {
     ));
   }
 
-  handleAlbumChange(event) {
+  handleAlbumInput(event) {
     this.setState({
       albumName: event.target.value
     });
+  }
+
+  handleAlbumChange(event, index, value) {
+    this.setState({
+      selectedAlbum: value
+    })
   }
 
   render() {
@@ -146,15 +161,14 @@ class App extends Component {
                     ref="textInput"
                     hintText="Album Name"
                     value={this.state.albumName}
-                    onChange={this.handleAlbumChange.bind(this)}
+                    onChange={this.handleAlbumInput.bind(this)}
                     />
                 </form>
-                <ul>
-                  {this.renderAlbums()}
-                </ul>
-              </Paper>
-            </div> : ''
-
+                {this.props.albumCount !== 0 ?
+                  this.renderAlbumSelect() : ''
+                }
+            </Paper>
+          </div>
 
         <Drawer
           docked={false}
@@ -177,7 +191,8 @@ class App extends Component {
 App.propTypes = {
   tasks: PropTypes.array.isRequired,
   incompleteCount: PropTypes.number.isRequired,
-  currentUser: PropTypes.object
+  currentUser: PropTypes.object,
+  albums: PropTypes.array.isRequired
 };
 
 export default createContainer(() => {
@@ -186,37 +201,7 @@ export default createContainer(() => {
     albums: Albums.find({}).fetch(),
     tasks: Tasks.find({}, {sort: { createdAt: -1 } }).fetch(),
     incompleteCount: Tasks.find({ checked: { $ne: true } }).count(),
-    currentUser: Meteor.user()
+    currentUser: Meteor.user(),
+    albumCount: Albums.find({}).count()
   };
 }, App);
-
-/*{ this.state.currentState === 'todos' ?
-<header>
-
-  <h1>Todo List ({this.props.incompleteCount})</h1>
-
-  <label className="hide-completed">
-    <input
-      type="checkbox"
-      readOnly
-      checked={this.state.hideCompleted}
-      onClick={this.toggleHideCompleted.bind(this)}
-      />
-    Hide Completed Tasks
-  </label>
-  <RaisedButton label="Open Drawer" onClick={this.handleToggle.bind(this)}/>
-  <AccountsUIWrapper />
-  <form className="new-task" onSubmit={this.handleSubmit.bind(this)} >
-    <input
-      type="text"
-      ref="textInput"
-      placeholder="Type to add new tasks"
-      />
-  </form>
-
-</header>
-
-<ul>
-  {this.renderTasks()}
-</ul>
-}*/
