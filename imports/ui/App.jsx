@@ -44,13 +44,19 @@ class App extends Component {
       currentState: 'albums',
       albumName: ''
     }
+
+    this.handleAlbumInput = this.handleAlbumInput.bind(this);
+    this.handleAlbumSubmit = this.handleAlbumSubmit.bind(this);
+    this.toggleDrawer = this.toggleDrawer.bind(this);
+    this.handleNavClose = this.handleNavClose.bind(this);
+    this.handleToggle = this.handleToggle.bind(this);
   }
 
   handleToggle() {
     this.setState({open: !this.state.open});
   }
 
-  handleClose(e) {
+  handleNavClose(e) {
     this.setState({
       currentState:  e.target.innerText.toLowerCase(),
       open: false
@@ -78,11 +84,9 @@ class App extends Component {
     event.preventDefault();
 
     //find the text field via the React Reference
-    const text = this.refs.textInput.props.value.trim();
-
     Albums.insert({
       artist: 'Pearl Jam',
-      name: text,
+      name: this.state.albumName,
       createdAt: new Date()
     });
 
@@ -90,12 +94,6 @@ class App extends Component {
     this.refs.textInput.props.value = '';
     this.state.albumName = '';
     this.renderAlbumSelect()
-  }
-
-  toggleHideCompleted() {
-    this.setState({
-      hideCompleted: !this.state.hideCompleted
-    });
   }
 
   toggleDrawer(){
@@ -119,8 +117,9 @@ class App extends Component {
   }
 
   renderAlbumSelect() {
+    let albums = this.props.albums;
     return (
-      <SelectDropDown value={this.props.selectedAlbum} ddData={this.props.albums} />
+      <SelectDropDown value={this.props.selectedAlbum} ddData={albums} />
     );
   }
 
@@ -150,18 +149,16 @@ class App extends Component {
     return (
       <MuiThemeProvider>
         <div className="container">
-          <AppBar
-            iconElementLeft={<IconButton onClick={this.handleToggle.bind(this)}><NavigationMenu /></IconButton>}/>
-
+          <AppBar iconElementLeft={<IconButton onClick={this.handleToggle}><NavigationMenu /></IconButton>}/>
           <div id="albums">
               <Paper style={paperStyle} zDepth={1}>
-                <form className="new-task" onSubmit={this.handleAlbumSubmit.bind(this)} >
+                <form className="new-task" onSubmit={this.handleAlbumSubmit} >
                   <TextField
                     id="album-name"
                     ref="textInput"
-                    hintText="Album Name"
+                    hintText="Add Album"
                     value={this.state.albumName}
-                    onChange={this.handleAlbumInput.bind(this)}
+                    onChange={this.handleAlbumInput}
                     />
                 </form>
                 {this.props.albumCount !== 0 ?
@@ -174,13 +171,13 @@ class App extends Component {
           docked={false}
           width={200}
           open={this.state.open}
-          onRequestChange={this.toggleDrawer.bind(this)}
+          onRequestChange={this.toggleDrawer}
         >
         <AppBar title="Menu"
-          iconElementLeft={<IconButton onClick={this.handleClose.bind(this)}><NavigationClose /></IconButton>}
+          iconElementLeft={<IconButton onClick={this.handleNavClose}><NavigationClose /></IconButton>}
           />
-          <MenuItem refs='bandsMenuItem' onClick={this.handleClose.bind(this)}>Bands</MenuItem>
-          <MenuItem refs='albumsMenuItem' onClick={this.handleClose.bind(this)}>Albums</MenuItem>
+          <MenuItem refs='bandsMenuItem' onClick={this.handleNavClose}>Bands</MenuItem>
+          <MenuItem refs='albumsMenuItem' onClick={this.handleNavClose}>Albums</MenuItem>
         </Drawer>
       </div>
       </MuiThemeProvider>
